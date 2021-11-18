@@ -102,7 +102,7 @@ def weights_init_classifier(m):
 
 
 class EfficientNetv2(nn.Module):
-    def __init__(self, num_classes, neck="bnneck", training=True, args=True):
+    def __init__(self, num_classes, neck="bnneck", training=True, args=True, verbose=False):
         super().__init__()
 
         self.in_planes = 1280
@@ -154,6 +154,6 @@ if __name__ == "__main__":
     print(score.shape, feat.shape)
 
     model.eval()
-    feat = model(sample)
-    print(feat.shape)
+    score = model(sample)
+    print(score.shape)
     pass
