@@ -59,21 +59,27 @@ class DatasetForClassify(torch.utils.data.Dataset):
         return img_path, img, img0, img_label
 
 
-train_transform = AT.Compose([
+default_train_transform = AT.Compose([
     AT.Rotate(limit=20),
     AT.Affine(translate_percent=(0.1, 0.1)),
     AT.Perspective(),
+    #AT.Resize(128, 128),
+])
+
+default_valid_transform = AT.Compose([
+    #AT.Resize(128, 128),
 ])
 
 
 def get_mnist_dataloader(train_root: str = "/media/daton/D6A88B27A88B0569/dataset/mnist/query_gallery/train",
                          valid_root: str = "/media/daton/D6A88B27A88B0569/dataset/mnist/query_gallery/valid",
-                         train_transform: AT.core.composition.Compose = train_transform,
+                         train_transform: AT.core.composition.Compose = default_train_transform,
+                         valid_transform: AT.core.composition.Compose = default_valid_transform,
                          subset_num: int = None,
-                         train_batch: int = 64,
-                         valid_batch: int = 64):
+                         train_batch: int = 128,
+                         valid_batch: int = 256):
     train_dataset = DatasetForClassify(train_root, True, subset_num, train_transform)
-    valid_dataset = DatasetForClassify(valid_root, False, subset_num, None)
+    valid_dataset = DatasetForClassify(valid_root, False, subset_num, valid_transform)
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
