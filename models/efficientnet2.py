@@ -1,5 +1,11 @@
 # EfficientNet v2 for classification and feature extraction
 
+import sys
+from pathlib import Path
+FILE = Path(__file__).absolute()
+if FILE.parents[0].as_posix() not in sys.path:
+    sys.path.append(FILE.parents[0].as_posix())
+
 import torch
 import torch.nn as nn
 
@@ -10,7 +16,7 @@ class EfficientNet2Base(nn.Module):
     def __init__(self, args):
         super().__init__()
         gate_fn = [True, False]
-        filters = [24, 48, 64, 128, 160, 256, 1280]
+        filters = [24, 48, 64, 128, 160, 256, 512]
 
         base = [Conv(args, 3, filters[0], torch.nn.SiLU(), 3, 2)]
         for i in range(2):
@@ -105,7 +111,7 @@ class EfficientNetv2(nn.Module):
     def __init__(self, num_classes, neck="bnneck", training=True, args=True, verbose=False):
         super().__init__()
 
-        self.in_planes = 1280
+        self.in_planes = 512
         self.base = EfficientNet2Base(args)
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.num_clssses = num_classes
@@ -121,8 +127,9 @@ class EfficientNetv2(nn.Module):
             self.bottleneck.apply(weights_init_kaiming)
             self.classifier.apply(weights_init_classifier)
 
-    def forward(self, x):
+        self.softmax = nn.Softmax(dim=1)
 
+    def forward(self, x):
         global_feat = self.gap(self.base(x))  # (b, in_planes, 1, 1)
         global_feat = global_feat.view(
             global_feat.shape[0], -1)  # flatten to (bs, in_planes)
@@ -133,7 +140,7 @@ class EfficientNetv2(nn.Module):
             # normalize for angular softmax
             feat = self.bottleneck(global_feat)
 
-        cls_score = self.classifier(feat).softmax(dim=1)
+        cls_score = self.softmax(self.classifier(feat).softmax(dim=1))
         if self.training:
             return cls_score, global_feat  # global feature for triplet loss
         else:
@@ -148,8 +155,8 @@ class EfficientNetv2(nn.Module):
 
 
 if __name__ == "__main__":
-    model = EfficientNetv2(255)
-    sample = torch.rand((32, 3, 256, 128))
+    model = EfficientNetv2(10)
+    sample = torch.rand((32, 3, 28, 28))
     score, feat = model(sample)
     print(score.shape, feat.shape)
 
